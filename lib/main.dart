@@ -1,3 +1,5 @@
+// ignore_for_file: unused_import, use_key_in_widget_constructors, library_private_types_in_public_api, prefer_const_constructors
+
 import 'package:flutter/material.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -73,10 +75,10 @@ class _MyHomePageState extends State<MyHomePage> {
     final String? encryptedStorage = prefs.getString('encrypted');
 
     if (keyStorage != null && ivStorage != null && encryptedStorage != null) {
-      final key = encrypt.Key.fromUtf8(keyStorage!);
-      final iv = encrypt.IV.fromUtf8(ivStorage!);
+      final key = encrypt.Key.fromUtf8(keyStorage);
+      final iv = encrypt.IV.fromUtf8(ivStorage);
       final decrypter = encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.cbc,padding: paddingStorage ?? "PKCS7"));
-      final decrypted = decrypter.decryptBytes(encrypt.Encrypted.from64(encryptedStorage!), iv: iv);
+      final decrypted = decrypter.decryptBytes(encrypt.Encrypted.from64(encryptedStorage), iv: iv);
       final decryptedString = utf8.decode(decrypted);
       final user = jsonDecode(decryptedString) as Map<String, dynamic>;
       setState(() {
