@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yagi/Dashboard.dart';
 import 'package:yagi/landingPage.dart';
 import 'package:rflutter_alert/rflutter_alert.dart';
 import 'package:yagi/globals.dart' as globals;
 import 'package:http/http.dart' as http;
-import 'dart:convert' show jsonDecode;
+import 'dart:convert';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
+import 'dart:async';
 
 void main() {
   runApp(
-    MyApp(),
+    Phoenix(
+      child: MyApp(),
+    ),
   );
 }
 
@@ -52,73 +57,75 @@ class _MyHomePageState extends State<MyHomePage> {
     if (!status.isGranted) {
       await Permission.storage.request();
     }
-    
+    status = await Permission.accessMediaLocation.status;
+    if (!status.isGranted) {
+      await Permission.accessMediaLocation.request();
+    }
+    status = await Permission.manageExternalStorage.status;
+    if (!status.isGranted) {
+      await Permission.manageExternalStorage.request();
+    }
+
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? user_email = prefs.getString('user_email');
-    final String? user_password = prefs.getString('user_password');
+    final String? keyStorage = prefs.getString('key');
+    final String? ivStorage = prefs.getString('iv');
+    final String? paddingStorage = prefs.getString('padding');
+    final String? encryptedStorage = prefs.getString('encrypted');
 
-    if (user_email != null && user_password != null) {
+    if (keyStorage != null && ivStorage != null && encryptedStorage != null) {
+      final key = encrypt.Key.fromUtf8(keyStorage!);
+      final iv = encrypt.IV.fromUtf8(ivStorage!);
+      final decrypter = encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.cbc,padding: paddingStorage ?? "PKCS7"));
+      final decrypted = decrypter.decryptBytes(encrypt.Encrypted.from64(encryptedStorage!), iv: iv);
+      final decryptedString = utf8.decode(decrypted);
+      final user = jsonDecode(decryptedString) as Map<String, dynamic>;
       setState(() {
-        globals.loadingAutologin = true;
+        globals.name=user['name'];
+        globals.nik=user['nik'];
+        globals.phone=user['phone'];
+        globals.email=user['email'];
+        globals.key=keyStorage;
+        globals.iv=ivStorage;
+        globals.encrypted=encryptedStorage;
+        globals.isLoggedIn = true;
       });
-      var url = Uri.parse(globals.api + '/loginEncrypted');
-      final response = await http.post(url, body: {'email': user_email, 'password': user_password});
-
-      if (response.statusCode == 200) {
-        Map<String, dynamic> parsed = jsonDecode(response.body);
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_id', (parsed['data']['user']['id']).toString());
-        await prefs.setString('user_role', parsed['data']['user']['role']);
-        await prefs.setString('user_name', parsed['data']['user']['name']);
-        await prefs.setString('user_email', parsed['data']['user']['email']);
-        await prefs.setString('user_password', parsed['data']['user']['password']);
-        await prefs.setString('user_card_id', parsed['data']['user']['card_id']);
+    }
+    else {
+        await prefs.remove('key');
+        await prefs.remove('iv');
+        await prefs.remove('padding');
+        await prefs.remove('encrypted');
         setState(() {
-          // globals.user_id = (parsed['data']['user']['id']).toString();
-          // globals.user_role = parsed['data']['user']['role'];
-          // globals.user_name = parsed['data']['user']['name'];
-          // globals.user_email = parsed['data']['user']['email'];
-          // globals.user_password = parsed['data']['user']['password'];
-          // globals.user_card_id = parsed['data']['user']['card_id'];
-          globals.isLoggedIn = true;
+        globals.name="";
+        globals.nik="";
+        globals.phone="";
+        globals.email="";
+        globals.key="";
+        globals.iv="";
+        globals.encrypted="";
+        globals.isLoggedIn = false;
         });
-      } else {
-        await prefs.remove('user_id');
-        await prefs.remove('user_role');
-        await prefs.remove('user_name');
-        await prefs.remove('user_email');
-        await prefs.remove('user_password');
-        await prefs.remove('user_card_id');
-        setState(() {
-          // globals.user_id = "";
-          // globals.user_name = "";
-          // globals.user_email = "";
-          // globals.user_password = "";
-          // globals.user_card_id = "";
-          globals.isLoggedIn = false;
-        });
-        Alert(
-          context: context,
-          type: AlertType.info,
-          title: "Login Failed!",
-          desc: "Please relogin",
-          buttons: [
-            DialogButton(
-              child: Text(
-                "OK",
-                style: TextStyle(color: Colors.white, fontSize: 20),
-              ),
-              onPressed: () => Navigator.pop(context),
-            )
-          ],
-        ).show();
+        // Alert(
+        //   context: context,
+        //   type: AlertType.info,
+        //   title: "Login Failed!",
+        //   desc: "Please relogin",
+        //   buttons: [
+        //     DialogButton(
+        //       child: Text(
+        //         "OK",
+        //         style: TextStyle(color: Colors.white, fontSize: 20),
+        //       ),
+        //       onPressed: () => Navigator.pop(context),
+        //     )
+        //   ],
+        // ).show();
       }
       setState(() {
         globals.loadingAutologin = false;
       });
       return;
     }
-  }
 
   @override
   Widget build(BuildContext context) {

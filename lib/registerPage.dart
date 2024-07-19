@@ -11,6 +11,7 @@ import 'package:encrypt/encrypt.dart' as encrypt;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
 
 class RegisterPage extends StatefulWidget {
   RegisterPage({Key? key}) : super(key: key);
@@ -38,14 +39,7 @@ class RegisterPageState extends State<RegisterPage> {
     if (!status.isGranted) {
       await Permission.manageExternalStorage.request();
     }
-
-    // final Directory directory = await getApplicationDocumentsDirectory();
-    // String directory = Directory('/storage/emulated/0/Download');
-    // if (!await directory.exists()) directory = await getExternalStorageDirectory();
-    // final directory = await getExternalStorageDirectory();
-    // print(directory);
     final Directory newDirectory = Directory('/storage/emulated/0/meds_record');
-    // Always check that the directory exists
     if (await newDirectory.exists() == false) {
       await newDirectory.create();
     }
@@ -242,12 +236,9 @@ class RegisterPageState extends State<RegisterPage> {
         globals.isLoggedIn = true;
       });
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('name', _name);
-      await prefs.setString('nik', _nik);
-      await prefs.setString('phone', _phone);
-      await prefs.setString('email', _email);
       await prefs.setString('key', myKey);
       await prefs.setString('iv', myIV);
+      await prefs.setString('padding', 'PKCS7');
       await prefs.setString('encrypted', encryptedText);
 
       Alert(
@@ -282,7 +273,7 @@ class RegisterPageState extends State<RegisterPage> {
                 style: TextStyle(color: Colors.white, fontSize: 20),
               ),
               onPressed: (){
-                Navigator.pop(context);
+                  Phoenix.rebirth(context);
               },
             ),
           ],

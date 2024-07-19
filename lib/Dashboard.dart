@@ -6,6 +6,10 @@ import 'package:yagi/globals.dart' as globals;
 import 'dart:async';
 import 'package:rflutter_alert/rflutter_alert.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
 // import 'dataModel.dart';
 // import 'history.dart';
 
@@ -53,6 +57,53 @@ class DashboardState extends State<Dashboard> {
       _selectedIndex = index;
     });
   }
+  _write(String text) async {
+    var status = await Permission.storage.status;
+    if (!status.isGranted) {
+      await Permission.storage.request();
+    }
+    status = await Permission.accessMediaLocation.status;
+    if (!status.isGranted) {
+      await Permission.accessMediaLocation.request();
+    }
+    status = await Permission.manageExternalStorage.status;
+    if (!status.isGranted) {
+      await Permission.manageExternalStorage.request();
+    }
+    final Directory newDirectory = Directory('/storage/emulated/0/meds_record');
+    if (await newDirectory.exists() == false) {
+      await newDirectory.create();
+    }
+    final File file = File('/storage/emulated/0/meds_record/profile.txt');
+    if (await file.exists() == false) {
+      await file.create();
+    }
+    print(file);
+    await file.writeAsString(text);
+    Alert(
+          context: context,
+          type: AlertType.success,
+          title: "Export Success",
+          desc: "File Exported to \n/storage/emulated/0/meds_record/profile.txt",
+          style: AlertStyle(
+            descStyle: TextStyle(
+              fontSize: 14
+            )
+          ),
+
+          buttons: [
+            DialogButton(
+              child: Text(
+                "OK",
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+              onPressed: (){
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ).show();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,144 +125,55 @@ class DashboardState extends State<Dashboard> {
               style: TextStyle(color: Colors.white),
             ),
             actions: <Widget>[
-              // IconButton(
-              //     icon: const Icon(Icons.settings,
-              //         color: Colors.white, size: 20.0),
-              //     onPressed: () async {
-              //       //================================ ALERT UNTUK SETTING API ========================================
-              //       Alert(
-              //         context: context,
-              //         // type: AlertType.info,
-              //         desc: "Setting API",
-              //         content: Column(
-              //           children: <Widget>[
-              //             SizedBox(
-              //                 height: MediaQuery.of(context).size.width / 15),
-              //             TextField(
-              //               decoration: InputDecoration(
-              //                 border: OutlineInputBorder(),
-              //                 labelText: 'IP Endpoint',
-              //                 labelStyle: TextStyle(fontSize: 20),
-              //               ),
-              //               controller: _data[0],
-              //             ),
-              //           ],
-              //         ),
-              //         buttons: [
-              //           DialogButton(
-              //               child: Text(
-              //                 "Save",
-              //                 style:
-              //                     TextStyle(color: Colors.white, fontSize: 20),
-              //               ),
-              //               onPressed: () async {
-              //                 if (_data[0].text.isEmpty) {
-              //                   status = false;
-              //                   Alert(
-              //                     context: context,
-              //                     type: AlertType.error,
-              //                     title: "Value Cannot be Empty!",
-              //                     buttons: [
-              //                       DialogButton(
-              //                         child: Text(
-              //                           "OK",
-              //                           style: TextStyle(
-              //                               color: Colors.white, fontSize: 20),
-              //                         ),
-              //                         onPressed: () => Navigator.pop(context),
-              //                       )
-              //                     ],
-              //                   ).show();
-              //                 } else {
-              //                   var url = Uri.parse('http://' +
-              //                       _data[0].text +
-              //                       '/checkConnection.php');
-              //                   try {
-              //                     final response = await http.get(url).timeout(
-              //                       const Duration(
-              //                           seconds: globals.httpTimeout),
-              //                       onTimeout: () {
-              //                         // Time has run out, do what you wanted to do.
-              //                         return http.Response('Error',
-              //                             408); // Request Timeout response status code
-              //                       },
-              //                     );
-              //                     // context.loaderOverlay.hide();
-              //                     if (response.statusCode == 200) {
-              //                       Alert(
-              //                         context: context,
-              //                         type: AlertType.success,
-              //                         title: "Connection OK",
-              //                         buttons: [
-              //                           DialogButton(
-              //                               child: Text(
-              //                                 "OK",
-              //                                 style: TextStyle(
-              //                                     color: Colors.white,
-              //                                     fontSize: 20),
-              //                               ),
-              //                               onPressed: () async {
-              //                                 final SharedPreferences prefs =
-              //                                     await SharedPreferences
-              //                                         .getInstance();
-              //                                 setState(() {
-              //                                   globals.endpoint =
-              //                                       _data[0].text;
-              //                                   prefs.setString(
-              //                                       "endpoint", _data[0].text);
-              //                                 });
-              //                                 Navigator.pop(context);
-              //                                 Navigator.pop(context);
-              //                               })
-              //                         ],
-              //                       ).show();
-              //                     } else {
-              //                       Alert(
-              //                         context: context,
-              //                         type: AlertType.error,
-              //                         title: "Connection Failed!",
-              //                         desc: "Please check Endpoint IP",
-              //                         buttons: [
-              //                           DialogButton(
-              //                             child: Text(
-              //                               "OK",
-              //                               style: TextStyle(
-              //                                   color: Colors.white,
-              //                                   fontSize: 20),
-              //                             ),
-              //                             onPressed: () =>
-              //                                 Navigator.pop(context),
-              //                           )
-              //                         ],
-              //                       ).show();
-              //                     }
-              //                   } on Exception catch (_) {
-              //                     Alert(
-              //                       context: context,
-              //                       type: AlertType.error,
-              //                       title: "Connection Failed!",
-              //                       desc: "Please check Endpoint IP",
-              //                       buttons: [
-              //                         DialogButton(
-              //                           child: Text(
-              //                             "OK",
-              //                             style: TextStyle(
-              //                                 color: Colors.white,
-              //                                 fontSize: 20),
-              //                           ),
-              //                           onPressed: () => Navigator.pop(context),
-              //                         )
-              //                       ],
-              //                     ).show();
-              //                     // rethrow;
-              //                   }
-              //                 }
-              //               }),
-              //         ],
-              //       ).show();
+              IconButton(
+                  icon: const Icon(Icons.logout,
+                      color: Colors.white, size: 20.0),
+                  onPressed: () async {
+                    Alert(
+                      context: context,
+                      type: AlertType.warning,
+                      desc: "Apakah anda ingin logout ?",
+                      buttons: [
+                        DialogButton(
+                            child: Text(
+                              "Tidak",
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 20),
+                            ),
+                            onPressed: () async {
+                              Navigator.pop(context);
+                            }
+                        ),
+                        DialogButton(
+                            child: Text(
+                              "Ya",
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 20),
+                            ),
+                            onPressed: () async {                              
+                              final prefs = await SharedPreferences.getInstance();
+                              await prefs.remove('key');
+                              await prefs.remove('iv');
+                              await prefs.remove('padding');
+                              await prefs.remove('encrypted');
+                              setState(() {
+                                globals.name="";
+                                globals.nik="";
+                                globals.phone="";
+                                globals.email="";
+                                globals.key="";
+                                globals.iv="";
+                                globals.encrypted="";
+                                globals.isLoggedIn = false;
+                              });
+                              Phoenix.rebirth(context);
+                            }
+                        )
+                      ],
+                    ).show();
 
-              //       //================================ END ALERT UNTUK SETTING API ========================================
-              //     })
+                    //================================ END ALERT UNTUK SETTING API ========================================
+                  })
             ],
           ),
           bottomNavigationBar: BottomNavigationBar(
@@ -231,9 +193,85 @@ class DashboardState extends State<Dashboard> {
               ),
             ],
           ),
-          body: Container(
-            child: Text("Home"),
-          ),
+          body: _selectedIndex == 0 ?
+          Container(
+            margin: new EdgeInsets.only(left: 20.0, right: 20.0, top: 50),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Column(
+                  children: [
+                    Image.asset(
+                      'assets/img/logo.png',
+                      width: MediaQuery.of(context).size.width/2,
+                    ),
+                  ],
+                )
+              ],
+            ),
+          )
+          :
+          Container(
+            margin: new EdgeInsets.only(left: 20.0, right: 20.0, top: 50),
+            child:
+            Column(
+              children: [
+                
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Column(
+                      children: [
+                        Image.asset(
+                          'assets/img/logo.png',
+                          width: MediaQuery.of(context).size.width/2,
+                        ),
+                        SizedBox(height: MediaQuery.of(context).size.width / 15),
+                      ],
+                    )
+                  ],
+                ),
+                
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Name : ${globals.name}"),
+                        Text("NIK : ${globals.nik}"),
+                        Text("Phone : ${globals.phone}"),
+                        Text("Email : ${globals.email}"),
+                        SizedBox(height: MediaQuery.of(context).size.width / 15),
+                        Text("Key : ${globals.key}"),
+                        Text("IV : ${globals.iv}"),
+                      ],
+                    )
+                  ],
+                ),
+
+                SizedBox(height: 12),
+                DialogButton(
+                  child: Text(
+                    "Export",
+                    style: TextStyle(color: Colors.white, fontSize: 20 ),
+                  ),
+                  onPressed: () async{
+                    var status = await Permission.storage.status;
+                    if (!status.isGranted) {
+                      await Permission.storage.request();
+                    }
+                    
+                    final Export = "{\"key\":\"${globals.key}\",\"iv\":\"${globals.iv}\",\"padding\":\"PKCS7\",\"encrypted\":\"${globals.encrypted}\"}";
+                    _write(Export);
+                    // Navigator.pop(context);
+                  },
+                ),
+              ],
+            ) 
+          )
         ),
     );
   }

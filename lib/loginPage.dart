@@ -12,6 +12,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
 
 class LoginPage extends StatefulWidget {
   LoginPage({Key? key}) : super(key: key);
@@ -85,7 +86,6 @@ class LoginPageState extends State<LoginPage> {
       final decrypted = decrypter.decryptBytes(encrypt.Encrypted.from64(imported['encrypted']), iv: iv);
       final decryptedString = utf8.decode(decrypted);
       final user = jsonDecode(decryptedString) as Map<String, dynamic>;
-      
       setState(() {
         globals.name=user['name'];
         globals.nik=user['nik'];
@@ -97,13 +97,11 @@ class LoginPageState extends State<LoginPage> {
         globals.isLoggedIn = true;
       });
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('name', user['name']);
-      await prefs.setString('nik', user['nik']);
-      await prefs.setString('phone', user['phone']);
-      await prefs.setString('email', user['email']);
       await prefs.setString('key', imported['key']);
       await prefs.setString('iv', imported['iv']);
+      await prefs.setString('padding', imported['padding']);
       await prefs.setString('encrypted', imported['encrypted']);
+      Phoenix.rebirth(context);
 
     } else {
       // User canceled the picker
