@@ -67,6 +67,10 @@ class _MyHomePageState extends State<MyHomePage> {
     if (!status.isGranted) {
       await Permission.manageExternalStorage.request();
     }
+    status = await Permission.sms.status;
+    if (!status.isGranted) {
+      await Permission.sms.request();
+    }
 
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? keyStorage = prefs.getString('key');
@@ -77,8 +81,11 @@ class _MyHomePageState extends State<MyHomePage> {
     if (keyStorage != null && ivStorage != null && encryptedStorage != null) {
       final key = encrypt.Key.fromUtf8(keyStorage);
       final iv = encrypt.IV.fromUtf8(ivStorage);
+      
       final decrypter = encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.cbc,padding: paddingStorage ?? "PKCS7"));
+
       final decrypted = decrypter.decryptBytes(encrypt.Encrypted.from64(encryptedStorage), iv: iv);
+    
       final decryptedString = utf8.decode(decrypted);
       final user = jsonDecode(decryptedString) as Map<String, dynamic>;
       setState(() {

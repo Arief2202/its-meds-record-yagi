@@ -212,18 +212,13 @@ class RegisterPageState extends State<RegisterPage> {
       final key = encrypt.Key.fromUtf8(myKey);
       final iv = encrypt.IV.fromUtf8(myIV);
 
-      // final key = encrypt.Key.fromSecureRandom(32);
-      // final iv = encrypt.IV.fromSecureRandom(16);
-      // final encrypter = encrypt.Encrypter(encrypt.AES(key));
-      // final encrypted = encrypter.encrypt(json, iv: iv);
-
       final encrypter = encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.cbc, padding: 'PKCS7'));
       final encrypted = encrypter.encrypt(json, iv: iv);
       final encryptedText = encrypted.base64;
       print(encryptedText);
 
       final Export = "{\"key\":\"${myKey}\",\"iv\":\"${myIV}\",\"padding\":\"PKCS7\",\"encrypted\":\"${encryptedText}\"}";
-
+      print(Export);
       setState(() {
         globals.name=_name;
         globals.nik=_nik;
@@ -258,10 +253,6 @@ class RegisterPageState extends State<RegisterPage> {
                 style: TextStyle(color: Colors.white, fontSize: 20 ),
               ),
               onPressed: () async{
-                var status = await Permission.storage.status;
-                if (!status.isGranted) {
-                  await Permission.storage.request();
-                }
                 _write(Export);
                 // Navigator.pop(context);
               },
@@ -277,11 +268,6 @@ class RegisterPageState extends State<RegisterPage> {
             ),
           ],
         ).show();
-        // var count = 0;
-        // Navigator.popUntil(context, (route) {
-        //   return count++ == 1;
-        // });
-      
     }
   }
 }
